@@ -1,0 +1,76 @@
+Generic Name,Brand Name,Manufacturer,Dosage,MRP (₹),Source,Generic Composition,Branded Composition,Composition Match
+Amlodipine,Amlopres,Cipla,5 mg Tablet,₹13.6 (10s),Netmeds,Amlodipine 5 mg,Amlodipine 5 mg,✅ Yes
+Amlodipine,Stamlo,Dr. Reddy's,5 mg Tablet,₹14.2 (10s),1mg,Amlodipine 5 mg,Amlodipine 5 mg,✅ Yes
+Amlodipine,Amlodac,Zydus,5 mg Tablet,₹14.5 (10s),1mg,Amlodipine 5 mg,Amlodipine 5 mg,✅ Yes
+Amlodipine,Amlong,Micro Labs,5 mg Tablet,₹19.0 (10s),Netmeds,Amlodipine 5 mg,Amlodipine 5 mg,✅ Yes
+Amlodipine,Stamlo,Dr. Reddy's,5 mg Tablet,₹19.3 (10s),Netmeds,Amlodipine 5 mg,Amlodipine 5 mg,✅ Yes
+Amlodipine,Amlopres,Cipla,5 mg Tablet,₹19.5 (10s),Netmeds,Amlodipine 5 mg,Amlodipine 5 mg,✅ Yes
+Amoxicillin,Wymox,Abbott,500 mg Capsule,₹108.72 (15s),Netmeds,Amoxicillin 500 mg,Amoxicillin 500 mg,✅ Yes
+Amoxicillin,Cipmox,Cipla Ltd,500 mg Capsule,₹108.80 (15s),Netmeds,Amoxicillin 500 mg,Amoxicillin 500 mg,✅ Yes
+Amoxicillin,Novamox,Cipla Ltd,500 mg Capsule,₹108.80 (15s),Netmeds,Amoxicillin 500 mg,Amoxicillin 500 mg,✅ Yes
+Amoxicillin,Mox,Sun Pharma,500 mg Capsule,₹71.0 (15s),Netmeds,Amoxicillin 500 mg,Amoxicillin 500 mg,✅ Yes
+Amoxicillin,Almox,Alkem,500 mg Capsule,₹70.5 (15s),Netmeds,Amoxicillin 500 mg,Amoxicillin 500 mg,✅ Yes
+Amoxicillin,Novamox,Cipla,500 mg Capsule,₹70.2 (15s),1mg,Amoxicillin 500 mg,Amoxicillin 500 mg,✅ Yes
+Atorvastatin,Storvas,Ranbaxy,10 mg Tablet,₹83.5 (10s),Netmeds,Atorvastatin 10 mg,Atorvastatin 10 mg,✅ Yes
+Atorvastatin,Lipicure,Cipla,10 mg Tablet,₹83.3 (10s),Netmeds,Atorvastatin 10 mg,Atorvastatin 10 mg,✅ Yes
+Atorvastatin,Tonact,Zydus,10 mg Tablet,₹84.0 (10s),Netmeds,Atorvastatin 10 mg,Atorvastatin 10 mg,✅ Yes
+Azithromycin,Azithral,Alembic,500 mg Tablet,₹79.99 (3s),1mg,Azithromycin 500 mg,Azithromycin 500 mg,✅ Yes
+Azithromycin,Azax,Cipla,500 mg Tablet,₹78.64 (3s),1mg,Azithromycin 500 mg,Azithromycin 500 mg,✅ Yes
+Azithromycin,Zithrocin,FDC,500 mg Tablet,₹79.75 (3s),1mg,Azithromycin 500 mg,Azithromycin 500 mg,✅ Yes
+Azithromycin,Azithral,Alembic,500 mg Tablet,₹122.5 (3s),1mg,Azithromycin 500 mg,Azithromycin 500 mg,✅ Yes
+Azithromycin,Azee,Cipla,500 mg Tablet,₹121.0 (3s),Netmeds,Azithromycin 500 mg,Azithromycin 500 mg,✅ Yes
+Azithromycin,Zithrocin,FDC,500 mg Tablet,₹120.7 (3s),Netmeds,Azithromycin 500 mg,Azithromycin 500 mg,✅ Yes
+Cefixime,Taxim-O,Alkem Labs,200 mg Tablet,₹160.0 (10s),1mg,Cefixime 200 mg,Cefixime 200 mg,✅ Yes
+Cefixime,Suprax,Lupin,200 mg Tablet,₹158.2 (10s),Netmeds,Cefixime 200 mg,Cefixime 200 mg,✅ Yes
+Cefixime,Zifi,FDC,200 mg Tablet,₹157.6 (10s),Netmeds,Cefixime 200 mg,Cefixime 200 mg,✅ Yes
+Ciprofloxacin,Cifran,Sun Pharma,500 mg Tablet,₹22.0 (10s),Netmeds,Ciprofloxacin 500 mg,Ciprofloxacin 500 mg,✅ Yes
+Ciprofloxacin,Ciplox,Cipla,500 mg Tablet,₹21.9 (10s),Netmeds,Ciprofloxacin 500 mg,Ciprofloxacin 500 mg,✅ Yes
+Ciprofloxacin,Ciprova,Lupin,500 mg Tablet,₹22.3 (10s),Netmeds,Ciprofloxacin 500 mg,Ciprofloxacin 500 mg,✅ Yes
+Clopidogrel,Clopilet,Sun Pharma,75 mg Tablet,₹67.2 (15s),Netmeds,Clopidogrel 75 mg,Clopidogrel 75 mg,✅ Yes
+Clopidogrel,Deplatt,Cipla,75 mg Tablet,₹66.8 (15s),Netmeds,Clopidogrel 75 mg,Clopidogrel 75 mg,✅ Yes
+Clopidogrel,Clopivas,Cipla,75 mg Tablet,₹66.5 (15s),Netmeds,Clopidogrel 75 mg,Clopidogrel 75 mg,✅ Yes
+Diclofenac,Voveran,Novartis,50 mg Tablet,₹15.7 (10s),Netmeds,Diclofenac Sodium 50mg,Diclofenac Sodium 50mg,✅ Yes
+Diclofenac,Diclogesic,Sun Pharma,50 mg Tablet,₹16.2 (10s),Netmeds,Diclofenac Sodium 50mg,Diclofenac Sodium 50mg,✅ Yes
+Diclofenac,Dynapar,Troikaa,50 mg Tablet,₹17.5 (10s),Netmeds,Diclofenac Sodium 50mg,Diclofenac Sodium 50mg,✅ Yes
+Dicyclomine,Cyclopam,Indoco,20 mg Tablet,₹38.0 (15s),Netmeds,Dicyclomine 20 mg,Dicyclomine 20 mg,✅ Yes
+Dicyclomine,Spasmokem,Alkem,20 mg Tablet,₹37.5 (15s),Netmeds,Dicyclomine 20 mg,Dicyclomine 20 mg,✅ Yes
+Dicyclomine,Meftal-Spas,Blue Cross,20 mg + others,₹41.0 (15s),Netmeds,Dicyclomine + Mefenamic Acid,Dicyclomine + Mefenamic Acid,✅ Yes
+Levocetirizine,Xyzal,Dr. Reddy's,5 mg Tablet,₹45.6 (10s),1mg,Levocetirizine 5 mg,Levocetirizine 5 mg,✅ Yes
+Levocetirizine,Levocet,Cipla,5 mg Tablet,₹44.2 (10s),1mg,Levocetirizine 5 mg,Levocetirizine 5 mg,✅ Yes
+Levocetirizine,LCZ,Hetero,5 mg Tablet,₹43.7 (10s),1mg,Levocetirizine 5 mg,Levocetirizine 5 mg,✅ Yes
+Losartan,Repace,Sun Pharma,50 mg Tablet,₹36.3 (10s),Netmeds,Losartan Potassium 50mg,Losartan Potassium 50mg,✅ Yes
+Losartan,Losar,Torrent,50 mg Tablet,₹35.7 (10s),Netmeds,Losartan Potassium 50mg,Losartan Potassium 50mg,✅ Yes
+Losartan,Angizaar,Mankind,50 mg Tablet,₹34.9 (10s),1mg,Losartan Potassium 50mg,Losartan Potassium 50mg,✅ Yes
+Losartan,Losar,Torrent,50 mg Tablet,₹49.0 (10s),1mg,Losartan Potassium 50 mg,Losartan Potassium 50 mg,✅ Yes
+Losartan,Repace,Sun Pharma,50 mg Tablet,₹48.5 (10s),Netmeds,Losartan Potassium 50 mg,Losartan Potassium 50 mg,✅ Yes
+Losartan,Arbitel,Micro Labs,50 mg Tablet,₹48.2 (10s),Netmeds,Losartan Potassium 50 mg,Losartan Potassium 50 mg,✅ Yes
+Metformin,Glycomet,USV Ltd,500 mg Tablet,₹18–66,1mg,Metformin 500 mg,Metformin 500 mg,✅ Yes
+Metformin,Gluconorm,Lupin Ltd,500 mg Tablet,₹34–70,1mg,Metformin 500 mg,Metformin 500 mg,✅ Yes
+Metformin,Gluformin,Abbott,500 mg Tablet,₹16–67,1mg,Metformin 500 mg,Metformin 500 mg,✅ Yes
+Metformin,Glyciphage,Franco-Indian,500 mg Tablet,₹18.0 (10s),Netmeds,Metformin Hydrochloride 500 mg,Metformin Hydrochloride 500 mg,✅ Yes
+Metformin,Gluformin,Abbott,500 mg Tablet,₹17.6 (10s),1mg,Metformin Hydrochloride 500 mg,Metformin Hydrochloride 500 mg,✅ Yes
+Metformin,Obimet,Macleods,500 mg Tablet,₹18.2 (10s),Netmeds,Metformin Hydrochloride 500 mg,Metformin Hydrochloride 500 mg,✅ Yes
+Metronidazole,Flagyl,Abbott,400 mg Tablet,₹11.2 (10s),Netmeds,Metronidazole 400 mg,Metronidazole 400 mg,✅ Yes
+Metronidazole,Metrogyl,J.B. Chemicals,400 mg Tablet,₹11.4 (10s),1mg,Metronidazole 400 mg,Metronidazole 400 mg,✅ Yes
+Metronidazole,Metrozol,Micro Labs,400 mg Tablet,₹11.6 (10s),Netmeds,Metronidazole 400 mg,Metronidazole 400 mg,✅ Yes
+Omeprazole,Omez,Dr. Reddy's,20 mg Capsule,₹53.5 (15s),Netmeds,Omeprazole 20 mg,Omeprazole 20 mg,✅ Yes
+Omeprazole,Ocid,Zydus,20 mg Capsule,₹52.8 (15s),Netmeds,Omeprazole 20 mg,Omeprazole 20 mg,✅ Yes
+Omeprazole,Omee,Alkem,20 mg Capsule,₹52.3 (15s),Netmeds,Omeprazole 20 mg,Omeprazole 20 mg,✅ Yes
+Pantoprazole,Pantocid,Sun Pharma,40 mg Tablet,₹73.5 (15s),Netmeds,Pantoprazole 40 mg,Pantoprazole 40 mg,✅ Yes
+Pantoprazole,Pan 40,Alkem Labs,40 mg Tablet,₹71.5 (15s),1mg,Pantoprazole 40 mg,Pantoprazole 40 mg,✅ Yes
+Pantoprazole,Pantodac,Zydus,40 mg Tablet,₹72.9 (15s),1mg,Pantoprazole 40 mg,Pantoprazole 40 mg,✅ Yes
+Paracetamol,Crocin,GSK,500 mg Tablet,₹15.54 (15s),1mg,Paracetamol 500 mg,Paracetamol 500 mg,✅ Yes
+Paracetamol,Calpol,GSK,500 mg Tablet,₹15.74 (15s),1mg,Paracetamol 500 mg,Paracetamol 500 mg,✅ Yes
+Paracetamol,P-250,Abbott,250 mg Syrup,₹29.5 (60 ml),Netmeds,Paracetamol 250 mg/5ml,Paracetamol 250 mg/5ml,✅ Yes
+Paracetamol,Crocin,GSK,500 mg Tablet,₹15.2 (15s),Netmeds,Paracetamol 500 mg,Paracetamol 500 mg,✅ Yes
+Paracetamol,Calpol,GSK,500 mg Tablet,₹15.3 (15s),Netmeds,Paracetamol 500 mg,Paracetamol 500 mg,✅ Yes
+Paracetamol,P-500,Intas,500 mg Tablet,₹15.1 (15s),Netmeds,Paracetamol 500 mg,Paracetamol 500 mg,✅ Yes
+Rabeprazole,Rabicip,Cipla,20 mg Tablet,₹84.9 (15s),Netmeds,Rabeprazole 20 mg,Rabeprazole 20 mg,✅ Yes
+Rabeprazole,Razo,Dr. Reddy's,20 mg Tablet,₹85.3 (15s),Netmeds,Rabeprazole 20 mg,Rabeprazole 20 mg,✅ Yes
+Rabeprazole,Rabemac,Macleods,20 mg Tablet,₹83.5 (15s),Netmeds,Rabeprazole 20 mg,Rabeprazole 20 mg,✅ Yes
+Ranitidine,Aciloc,Cadila,150 mg Tablet,₹15.9 (10s),Netmeds,Ranitidine 150 mg,Ranitidine 150 mg,✅ Yes
+Ranitidine,Zinetac,GSK,150 mg Tablet,₹15.5 (10s),1mg,Ranitidine 150 mg,Ranitidine 150 mg,✅ Yes
+Ranitidine,Ranitin,Mankind,150 mg Tablet,₹16.2 (10s),1mg,Ranitidine 150 mg,Ranitidine 150 mg,✅ Yes
+Telmisartan,Telma,Glenmark,40 mg Tablet,₹109.0 (15s),Netmeds,Telmisartan 40 mg,Telmisartan 40 mg,✅ Yes
+Telmisartan,Telsartan,Dr. Reddy's,40 mg Tablet,₹108.2 (15s),Netmeds,Telmisartan 40 mg,Telmisartan 40 mg,✅ Yes
+Telmisartan,Telmikind,Mankind,40 mg Tablet,₹107.5 (15s),1mg,Telmisartan 40 mg,Telmisartan 40 mg,✅ Yes

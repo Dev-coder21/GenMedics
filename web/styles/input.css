@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-paper text-ink font-sans antialiased; }
+  :focus-visible { outline: 2px solid #0F5B43; outline-offset: 2px; }
+  input::placeholder, textarea::placeholder { color: #6B7872; }
+  [hidden] { display: none !important; }
+}
+
+@layer components {
+  .wrap { @apply max-w-[1280px] mx-auto px-4 sm:px-6; }
+  .eyebrow { @apply font-mono text-xs tracking-[.1em] uppercase; }
+  .h-display { @apply font-display font-extrabold tracking-[-.035em]; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] px-4; }
+  .btn-primary { @apply btn bg-pine text-white hover:bg-pine-dark; }
+  .btn-lime { @apply btn bg-lime text-ink font-bold hover:brightness-95; }
+  .btn-ghost { @apply btn bg-white text-ink border border-[#C9D1CA] hover:border-ink; }
+  .btn-dark { @apply btn bg-ink text-white hover:bg-black; }
+  .btn-danger { @apply btn bg-white text-danger border border-[#F4C7C3] hover:bg-danger-bg; }
+  .card { @apply bg-white border border-line rounded-[20px]; }
+  .lift { @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-lift; }
+  .input { @apply w-full h-12 rounded-xl border border-line bg-white px-4 text-[15px] text-ink outline-none focus:border-pine focus:ring-2 focus:ring-pine/20; }
+  .label { @apply block text-sm font-medium text-body mb-1.5; }
+  .chip { @apply inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold border transition; }
+  .chip-on { @apply chip bg-ink text-white border-ink; }
+  .chip-off { @apply chip bg-white text-ink border-[#C9D1CA] hover:border-ink; }
+  .pill { @apply inline-flex items-center gap-1 font-mono text-xs font-semibold px-2 py-1 rounded-md; }
+  .sr-only-x { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+}
+
+@keyframes sweep { 0% { top: 4% } 50% { top: 92% } 100% { top: 4% } }
+.sweep { position:absolute; left:0; right:0; height:3px; background:#CDEB6B; box-shadow:0 0 18px 4px rgba(205,235,107,.8); animation: sweep 1.8s ease-in-out infinite; }
+@keyframes fadeUp { from { opacity:0; transform: translateY(8px) } to { opacity:1; transform:none } }
+.fade-up { animation: fadeUp .25s ease both; }
+@media (prefers-reduced-motion: reduce) { .sweep, .fade-up { animation: none; } .lift:hover { transform:none; } }
