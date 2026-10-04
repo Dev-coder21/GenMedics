@@ -1,11 +1,11 @@
-// Minimal static server for dist/ (mimics GitHub Pages). Usage: npm run serve [-- --port 5173]
+// Minimal static server for dist/ (mimics GitHub Pages). Usage: npm run serve [-- --port 4710]
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const dist = fileURLToPath(new URL("../dist/", import.meta.url));
-const port = Number(process.argv[process.argv.indexOf("--port") + 1]) || 5173;
+const port = Number(process.argv[process.argv.indexOf("--port") + 1]) || 4710;
 const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json",
   ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json" };
 

@@ -1,5 +1,5 @@
 // Talks to the FastAPI backend (backend/v2.py) when it's reachable.
-// Rule: on localhost / 127.0.0.1 we look for the API at http://127.0.0.1:8000 (override with
+// Rule: on localhost / 127.0.0.1 we look for the API at http://127.0.0.1:4711 (override with
 // ?api=http://host:port, remembered in localStorage). Anywhere else (GitHub Pages) we stay static.
 const TOKEN_KEY = "genmedics:token";
 const API_KEY = "genmedics:apiUrl";
@@ -15,7 +15,7 @@ function candidate(): string | null {
     if (saved === "off") return null;
     if (saved) return saved;
   } catch {}
-  return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? "http://127.0.0.1:8000" : null;
+  return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? "http://127.0.0.1:4711" : null;
 }
 
 /** Resolves to the API base URL if a GenMedics backend answers, else null (demo mode). */

@@ -22,7 +22,7 @@ from database import get_db
 
 router = APIRouter(prefix="/v2", tags=["v2"])
 UPLOAD_DIR = "uploads/prescriptions"
-SCANNER_URL = os.getenv("SCANNER_URL", "http://127.0.0.1:8001/scan-text-only")
+SCANNER_URL = os.getenv("SCANNER_URL", "http://127.0.0.1:4712/scan-text-only")
 DEFAULT_SETTINGS = {"freeAbove": 299, "fee": 40, "portalTitle": "GenMedics Admin", "rxCheck": True, "cod": True, "upi": True}
 ORDER_FLOW = ["pending", "confirmed", "processing", "shipped", "delivered"]
 STATUSES = set(ORDER_FLOW) | {"cancelled"}

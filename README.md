@@ -26,7 +26,7 @@ scripts/    build_catalogue.py: turns the medicine database CSV into web/public/
 | Prescription OCR | `scanner/` service (OpenCV + multi-pass Tesseract), called by the backend | the same pipeline in the browser (tesseract.js) |
 | Catalogue | 1,769 medicines seeded into Postgres on first start | `web/public/data/medicines.json` |
 
-The web app picks the mode by itself: on `localhost` it looks for the API at `http://127.0.0.1:8000`
+The web app picks the mode by itself: on `localhost` it looks for the API at `http://127.0.0.1:4711`
 (override with `?api=http://host:port`, or `?api=off` to force demo mode); anywhere else it runs static.
 The footer shows which mode you're in. If the scanner service isn't running, scans fall back to browser OCR
 and are still saved to the database.
@@ -41,7 +41,7 @@ Needs PostgreSQL, Python 3.10+, Node 18+ and Tesseract (`brew install postgresql
 ```
 First run creates `backend/.env` — put your Postgres user/password in `DATABASE_URL`, then run it again.
 It creates the `genmedics` database, installs dependencies, seeds the catalogue and the two demo accounts,
-and starts the scanner (8001), the API (8000, docs at `/docs`) and the web app (5173).
+and starts the scanner (4712), the API (4711, docs at `/docs`) and the web app (4710).
 
 Only the web app (static demo mode): `cd web && npm install && npm run build && npm run serve`.
 The web app has no bundler: `tsc` compiles `src/` to ES modules, Tailwind builds the CSS, React's UMD build loads via an import map.

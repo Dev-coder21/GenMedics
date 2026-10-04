@@ -394,7 +394,7 @@ async def scan_and_process_prescription(db: Session, file: UploadFile, user_id: 
     with open(file_path, "wb") as f:
         f.write(file_bytes)
 
-    scanner_url = os.getenv("SCANNER_URL", "http://127.0.0.1:8001/scan-text-only")
+    scanner_url = os.getenv("SCANNER_URL", "http://127.0.0.1:4712/scan-text-only")
     try:
         async with httpx.AsyncClient(timeout=45.0) as client:
             files = {"file": (safe_filename, file_bytes, file.content_type or "image/png")}
