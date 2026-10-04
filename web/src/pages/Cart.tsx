@@ -84,6 +84,7 @@ export function Checkout() {
   const [rxId, setRxId] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [done, setDone] = useState<Order | null>(null);
+  const [busy, setBusy] = useState(false);
   const selAddr = addrId || mine.find((a) => a.isDefault)?.id || mine[0]?.id || null;
   const selRx = rxId || myRx[0]?.id || null;
 
@@ -106,14 +107,14 @@ export function Checkout() {
   if (!lines.length) return <div className="wrap py-16"><Empty icon="cart" title={t("cart_empty")}><Link to="/medicines" className="btn-primary no-underline">{t("cart_browse")}</Link></Empty></div>;
   if (!me) return <div className="wrap py-16"><Empty icon="user" title={t("co_signin")} body={t("co_signin_b")}><button className="btn-primary" onClick={() => openAuth("signin")}>{t("auth_signin")}</button><button className="btn-ghost" onClick={() => openAuth("register")}>{t("auth_register")}</button></Empty></div>;
 
-  const place = () => {
-    setErr("");
+  const place = async () => {
+    setErr(""); setBusy(true);
     try {
       if (!selAddr) throw new Error("Add a delivery address");
-      const o = placeOrder({ lines, addressId: selAddr, payment, rxId: needsRx ? selRx || undefined : undefined });
+      const o = await placeOrder({ lines, addressId: selAddr, payment, rxId: needsRx ? selRx || undefined : undefined });
       setDone(o); window.scrollTo({ top: 0 });
       toast(`Order #${o.id} placed`);
-    } catch (x: any) { setErr(x.message); }
+    } catch (x: any) { setErr(x.message); } finally { setBusy(false); }
   };
   const radio = (on: boolean) => cx("card p-4 flex gap-3 items-start cursor-pointer border-[1.5px]", on ? "border-pine bg-pine-tint" : "border-line hover:border-[#9AA6A0]");
 
@@ -171,7 +172,7 @@ export function Checkout() {
               {lines.map((l) => <li key={l.med.id} className="flex justify-between gap-3"><span className="truncate">{l.qty} × {l.med.name}</span><span className="font-mono">{inr(l.med.price * l.qty)}</span></li>)}
             </ul>
             {err && <p role="alert" className="text-sm text-danger bg-danger-bg rounded-lg px-3 py-2">{err}</p>}
-            <button type="button" className="btn-primary h-14 text-base mt-1" onClick={place}>{t("co_place")} · {inr(q.total)}</button>
+            <button type="button" className="btn-primary h-14 text-base mt-1" onClick={place} disabled={busy}>{t("co_place")} · {inr(q.total)}</button>
             <p className="text-xs text-muted">{t("demo_note")}</p>
           </Summary>
         </div>

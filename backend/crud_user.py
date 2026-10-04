@@ -11,7 +11,16 @@ import json
 import re
 from datetime import datetime
 import httpx
-from rapidfuzz import fuzz as rapidfuzz_fuzz
+try:
+    from rapidfuzz import fuzz as rapidfuzz_fuzz
+except ImportError:  # pragma: no cover - rapidfuzz is in requirements; difflib keeps imports working without it
+    import difflib
+    class rapidfuzz_fuzz:  # noqa: N801
+        @staticmethod
+        def token_set_ratio(a, b):
+            a, b = " ".join(sorted(set(a.split()))), " ".join(sorted(set(b.split())))
+            return difflib.SequenceMatcher(None, a, b).ratio() * 100
+        partial_ratio = token_set_ratio
 
 # User CRUD operations
 def get_user(db: Session, user_id: int):

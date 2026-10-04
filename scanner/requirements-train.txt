@@ -1,0 +1,8 @@
+# Optional: only for the OCR model experiments in src/ (train_ocr.py etc.)
+-r requirements.txt
+transformers==4.33.2
+torch>=2.6.0
+torchvision>=0.23.0
+datasets==2.15.0
+tqdm==4.66.1
+matplotlib==3.8.2

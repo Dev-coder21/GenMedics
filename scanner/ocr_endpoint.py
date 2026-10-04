@@ -13,7 +13,16 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import Tuple, List, Optional, Dict, Any
-from rapidfuzz import fuzz as rapidfuzz_fuzz
+try:
+    from rapidfuzz import fuzz as rapidfuzz_fuzz
+except ImportError:  # rapidfuzz is in requirements.txt; difflib fallback keeps the service usable without it
+    import difflib
+    class rapidfuzz_fuzz:  # noqa: N801
+        @staticmethod
+        def token_set_ratio(a, b):
+            a, b = " ".join(sorted(set(str(a).split()))), " ".join(sorted(set(str(b).split())))
+            return difflib.SequenceMatcher(None, a, b).ratio() * 100
+        partial_ratio = ratio = token_set_ratio
 import json
 import os
 import shutil

@@ -51,7 +51,10 @@ class Address(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     label = Column(String)  # "home", "work", "other"
+    name = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
     street = Column(String)
+    line2 = Column(String, nullable=True)
     city = Column(String)
     state = Column(String)
     pincode = Column(String)
@@ -69,6 +72,13 @@ class CustomerOrder(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     shipping_address_id = Column(Integer, ForeignKey("addresses.id"))
     tracking_number = Column(String, nullable=True)
+    payment = Column(String, default="cod")
+    prescription_id = Column(Integer, ForeignKey("prescriptions.id"), nullable=True)
+    subtotal = Column(Float, nullable=True)
+    delivery_fee = Column(Float, default=0.0)
+    brand_total = Column(Float, nullable=True)
+    address_snapshot = Column(Text, nullable=True)  # JSON: address at time of order
+    status_history = Column(Text, nullable=True)    # JSON: [{status, at, note}]
     
     user = relationship("User", back_populates="orders")
     items = relationship("CustomerOrderItem", back_populates="order")
@@ -134,3 +144,8 @@ class OrderItem(Base):
     quantity = Column(Integer)
     price = Column(Float)
     order = relationship("Order", back_populates="items")
+
+class Setting(Base):
+    __tablename__ = "settings"
+    key = Column(String, primary_key=True)
+    value = Column(Text)

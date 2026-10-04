@@ -4,9 +4,10 @@ import { Link, navigate } from "../lib/router.js";
 import { inr, inr0, fmtDate, timeAgo, cx } from "../lib/format.js";
 import {
   Category, DEMO_ACCOUNTS, LOW_STOCK, Med, ORDER_FLOW, Order, OrderStatus, Prescription, RxStatus, addMed, currentUser, deleteMed,
-  login, logout, patchMed, resetDemo, reviewPrescription, setOrderStatus, updateSettings, useDB,
+  isApi, login, logout, patchMed, resetDemo, reviewPrescription, setOrderStatus, updateSettings, useDB,
 } from "../lib/store.js";
 import { toast } from "../lib/ui.js";
+import { assetUrl } from "../lib/api.js";
 import { Field, Modal, OrderPill, RxPill, Spinner } from "../components/bits.js";
 import { Icon, Logo } from "../components/Icon.js";
 
@@ -121,8 +122,8 @@ function Overview() {
   const orders = db.orders.filter((o) => filter === "all" || o.status === filter).slice(0, 8);
   return (
     <>
-      <Head title="Overview" sub="Live from this browser's demo database">
-        <span className="pill bg-warn-bg text-[#8A3606] border border-warn-line py-1.5 px-2.5">DEMO DATA</span>
+      <Head title="Overview" sub={isApi() ? "Live from the GenMedics API · PostgreSQL" : "Live from this browser's demo database"}>
+        {isApi() ? <span className="pill bg-pine-soft text-pine border border-[#9CC5B2] py-1.5 px-2.5">● LIVE API</span> : <span className="pill bg-warn-bg text-[#8A3606] border border-warn-line py-1.5 px-2.5">DEMO DATA</span>}
         <Link to="/admin/inventory?new=1" className="btn-primary no-underline"><Icon name="plus" size={16} />Add medicine</Link>
       </Head>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
@@ -143,7 +144,7 @@ function Overview() {
               </div>
               <div className="flex gap-2">
                 <Link to={`/admin/prescriptions?id=${p.id}`} className="btn-ghost h-10 min-h-0 no-underline">Review</Link>
-                <button type="button" className="btn-primary h-10 min-h-0" onClick={() => { reviewPrescription(p.id, "approved"); toast(`${p.id} approved`); }}>Approve</button>
+                <button type="button" className="btn-primary h-10 min-h-0" onClick={() => reviewPrescription(p.id, "approved").then(() => toast(`${p.id} approved`), (x) => toast(x.message, { tone: "err" }))}>Approve</button>
               </div>
             </div>
           ))}
@@ -159,7 +160,7 @@ function Overview() {
             ))}
             {!low.length && <p className="text-muted text-sm">All SKUs above threshold.</p>}
           </div>
-          {low.length > 0 && <button type="button" className="btn-ghost w-full mt-5" onClick={() => { low.forEach((m) => patchMed(m.id, { stock: m.stock + 200 })); toast(`Restocked ${low.length} SKUs (+200 each)`); }}>Restock all (+200)</button>}
+          {low.length > 0 && <button type="button" className="btn-ghost w-full mt-5" onClick={async () => { try { for (const m of low) await patchMed(m.id, { stock: m.stock + 200 }); toast(`Restocked ${low.length} SKUs (+200 each)`); } catch (x: any) { toast(x.message, { tone: "err" }); } }}>Restock all (+200)</button>}
         </section>
       </div>
       <section className="card p-5 mt-4">
@@ -176,7 +177,7 @@ function Overview() {
 function RxThumb({ p, big }: { p: Prescription; big?: boolean }) {
   return (
     <div className={cx("rounded-md bg-[#FBFBF8] border border-line overflow-hidden shrink-0 grid place-items-center", big ? "w-full aspect-[3/4]" : "w-11 h-14")}>
-      {p.image ? <img src={p.image} alt={big ? `Prescription ${p.id}` : ""} className={big ? "w-full h-full object-contain" : "w-full h-full object-cover"} />
+      {p.image ? <img src={assetUrl(p.image)} alt={big ? `Prescription ${p.id}` : ""} className={big ? "w-full h-full object-contain" : "w-full h-full object-cover"} />
         : <div className="w-full h-full p-2 flex flex-col gap-1"><span className="h-[3px] bg-[#C9D1CA]" /><span className="h-[3px] bg-lime" /><span className="h-[3px] bg-lime" /><span className="h-[3px] w-3/5 bg-[#C9D1CA]" /></div>}
     </div>
   );
@@ -230,7 +231,7 @@ function RxSection() {
   const list = db.prescriptions.filter((p) => filter === "all" || p.status === filter);
   const open = db.prescriptions.find((p) => p.id === openId);
   const close = () => { setNote(""); navigate("/admin/prescriptions", true); };
-  const decide = (s: RxStatus) => { if (!open) return; if (s === "rejected" && !note.trim()) { toast("Add a note telling the customer what's wrong", { tone: "err" }); return; } reviewPrescription(open.id, s, note); toast(`${open.id} ${s}`); close(); };
+  const decide = async (s: RxStatus) => { if (!open) return; if (s === "rejected" && !note.trim()) { toast("Add a note telling the customer what's wrong", { tone: "err" }); return; } try { await reviewPrescription(open.id, s, note); toast(`${open.id} ${s}`); close(); } catch (x: any) { toast(x.message, { tone: "err" }); } };
   return (
     <>
       <Head title="Prescriptions" sub="Verify OCR matches before orders are packed"><StatusChips value={filter} onChange={setFilter} options={["pending", "approved", "rejected", "all"] as any} /></Head>
@@ -289,10 +290,10 @@ function OrdersSection() {
   const list = db.orders.filter((o) => (filter === "all" || o.status === filter) && (!q || String(o.id).includes(q.replace("#", "")) || (users.get(o.userId)?.name || o.address.name).toLowerCase().includes(q.toLowerCase())));
   const close = () => { setNote(""); navigate("/admin/orders", true); };
   const nextStatus = open && open.status !== "cancelled" ? ORDER_FLOW[ORDER_FLOW.indexOf(open.status) + 1] : undefined;
-  const advance = (s: OrderStatus) => {
+  const advance = async (s: OrderStatus) => {
     if (!open) return;
-    if (s === "confirmed" && open.rxId && rx?.status !== "approved" && db.settings.rxCheck) { toast(`Approve prescription ${open.rxId} first`, { tone: "err" }); return; }
-    setOrderStatus(open.id, s, note); setNote(""); toast(`#${open.id} → ${s}`);
+    if (s === "confirmed" && open.rxId && rx && rx.status !== "approved" && db.settings.rxCheck) { toast(`Approve prescription ${open.rxId} first`, { tone: "err" }); return; }
+    try { await setOrderStatus(open.id, s, note); setNote(""); toast(`#${open.id} → ${s}`); } catch (x: any) { toast(x.message, { tone: "err" }); }
   };
   return (
     <>
@@ -388,7 +389,7 @@ function Inventory() {
       <MedEditor med={edit} onClose={() => { setEdit(null); if (location.hash.includes("new=1")) navigate("/admin/inventory", true); }} />
       <Modal open={!!del} onClose={() => setDel(null)} title="Delete medicine?">
         {del && <><p className="text-body mb-5"><strong>{del.name}</strong> will be removed from the store and from any carts.</p>
-          <div className="flex gap-2"><button className="btn-danger" onClick={() => { deleteMed(del.id); toast(`Deleted ${del.name}`); setDel(null); }}>Delete</button><button className="btn-ghost" onClick={() => setDel(null)}>Cancel</button></div></>}
+          <div className="flex gap-2"><button className="btn-danger" onClick={async () => { try { await deleteMed(del.id); toast(`Deleted ${del.name}`); } catch (x: any) { toast(x.message, { tone: "err" }); } setDel(null); }}>Delete</button><button className="btn-ghost" onClick={() => setDel(null)}>Cancel</button></div></>}
       </Modal>
     </>
   );
@@ -408,15 +409,17 @@ function MedEditor({ med, onClose }: { med: Med | "new" | null; onClose: () => v
     setErr("");
   }
   if (!med && lastKey !== null) setLastKey(null);
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault(); setErr("");
     const price = Number(f.price), stock = Math.round(Number(f.stock)), count = Math.max(1, Math.round(Number(f.count) || 1));
     if (!f.name.trim()) return setErr("Name is required");
     if (!(price > 0)) return setErr("Price must be greater than 0");
     if (!(stock >= 0)) return setErr("Stock can't be negative");
-    if (isNew) { addMed({ name: f.name.trim(), price, stock, pack: f.pack, count, cat: f.cat, rx: !!f.rx, use: f.use, form: f.form }); toast(`Added ${f.name}`); }
-    else if (m) { patchMed(m.id, { name: f.name.trim(), price, stock, pack: f.pack, cat: f.cat, rx: !!f.rx, use: f.use }); toast(`Saved ${f.name}`); }
-    onClose();
+    try {
+      if (isNew) { await addMed({ name: f.name.trim(), price, stock, pack: f.pack, count, cat: f.cat, rx: !!f.rx, use: f.use, form: f.form }); toast(`Added ${f.name}`); }
+      else if (m) { await patchMed(m.id, { name: f.name.trim(), price, stock, pack: f.pack, cat: f.cat, rx: !!f.rx, use: f.use }); toast(`Saved ${f.name}`); }
+      onClose();
+    } catch (x: any) { setErr(x.message); }
   };
   const u = (k: string) => (e: React.ChangeEvent<any>) => setF({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
   return (
@@ -494,7 +497,7 @@ function Analytics() {
   const cats = [...catRev.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 6);
   return (
     <>
-      <Head title="Analytics" sub="Computed from orders in this browser" />
+      <Head title="Analytics" sub={isApi() ? "Computed from orders in PostgreSQL" : "Computed from orders in this browser"} />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3 mb-4">
         {[["Revenue", inr0(revenue)], ["Orders", String(orders.length)], ["Avg. order", inr(orders.length ? revenue / orders.length : 0)], ["Saved for customers", inr0(saved)]].map(([l, v]) => (
           <div key={l} className="card p-5"><div className="eyebrow text-[11px] text-muted">{l}</div><div className="font-mono text-3xl font-semibold mt-2">{v}</div></div>
@@ -527,7 +530,7 @@ function Settings() {
   return (
     <>
       <Head title="Settings" />
-      <form className="card p-6 grid sm:grid-cols-2 gap-5 max-w-3xl" onSubmit={(e) => { e.preventDefault(); updateSettings({ portalTitle: f.portalTitle, freeAbove: Math.max(0, Number(f.freeAbove) || 0), fee: Math.max(0, Number(f.fee) || 0), rxCheck: f.rxCheck, cod: f.cod || !f.upi, upi: f.upi }); toast("Settings saved"); }}>
+      <form className="card p-6 grid sm:grid-cols-2 gap-5 max-w-3xl" onSubmit={async (e) => { e.preventDefault(); try { await updateSettings({ portalTitle: f.portalTitle, freeAbove: Math.max(0, Number(f.freeAbove) || 0), fee: Math.max(0, Number(f.fee) || 0), rxCheck: f.rxCheck, cod: f.cod || !f.upi, upi: f.upi }); toast("Settings saved"); } catch (x: any) { toast(x.message, { tone: "err" }); } }}>
         <div className="sm:col-span-2"><Field label="Portal display title"><input className="input" value={f.portalTitle} onChange={(e) => setF({ ...f, portalTitle: e.target.value })} /></Field></div>
         <Field label="Free delivery above (₹)"><input className="input" inputMode="numeric" value={f.freeAbove} onChange={(e) => setF({ ...f, freeAbove: e.target.value })} /></Field>
         <Field label="Delivery fee (₹)"><input className="input" inputMode="numeric" value={f.fee} onChange={(e) => setF({ ...f, fee: e.target.value })} /></Field>
@@ -536,12 +539,12 @@ function Settings() {
         ))}
         <div className="sm:col-span-2"><button className="btn-primary">Save settings</button></div>
       </form>
-      <section className="card p-6 mt-4 max-w-3xl border-[#F4C7C3]">
+      {!isApi() && <section className="card p-6 mt-4 max-w-3xl border-[#F4C7C3]">
         <h2 className="font-display text-xl font-bold">Reset demo data</h2>
         <p className="text-body text-sm mt-1 mb-4">Clears every account, order, prescription and inventory edit stored in this browser and restores the sample data.</p>
         {confirm ? <div className="flex gap-2"><button className="btn-danger" onClick={() => { resetDemo(); toast("Demo data reset"); navigate("/admin"); }}>Yes, reset everything</button><button className="btn-ghost" onClick={() => setConfirm(false)}>Cancel</button></div>
           : <button className="btn-danger" onClick={() => setConfirm(true)}><Icon name="refresh" size={16} />Reset demo data</button>}
-      </section>
+      </section>}
     </>
   );
 }

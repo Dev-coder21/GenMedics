@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { DEMO_ACCOUNTS, currentUser, getDB, login, logout, register, setLang, useDB } from "../lib/store.js";
+import { DEMO_ACCOUNTS, currentUser, getDB, isApi, login, logout, register, setLang, useDB } from "../lib/store.js";
+import { API, apiCandidate } from "../lib/api.js";
 import { useT } from "../lib/i18n.js";
 import { Link, navigate, useRoute } from "../lib/router.js";
 import { closeAuth, closeChat, dismissToast, openAuth, openChat, toast, useUI } from "../lib/ui.js";
@@ -105,7 +106,11 @@ export function Footer() {
         <div className="max-w-sm">
           <div className="flex items-center gap-2.5"><Logo size={28} /><span className="font-display font-extrabold text-2xl tracking-tight">GenMedics</span></div>
           <p className="text-body text-sm leading-relaxed mt-3">{t("footer_tag")}</p>
-          <p className="text-muted text-xs mt-3 leading-relaxed">{t("demo_note")}</p>
+          {isApi() ? (
+            <p className="text-xs mt-3 leading-relaxed flex items-center gap-2 text-pine"><span className="w-2 h-2 rounded-full bg-pine" />Connected to the GenMedics API ({API}) · PostgreSQL</p>
+          ) : (
+            <p className="text-muted text-xs mt-3 leading-relaxed">{t("demo_note")}{apiCandidate() ? ` Backend not found at ${apiCandidate()} — start it to switch to full-stack mode.` : ""}</p>
+          )}
         </div>
         <div className="flex flex-wrap gap-12 text-sm">
           {col(t("footer_shop"), [["/medicines", t("all_medicines")], ["/prescriptions", t("nav_scan")], ["/wishlist", t("nav_wishlist")], ["/orders", t("nav_orders")]])}

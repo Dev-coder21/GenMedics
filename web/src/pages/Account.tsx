@@ -129,7 +129,7 @@ export function OrderDetail({ id }: { id: number }) {
           {o.status === "delivered" && <button type="button" className="btn-primary" onClick={() => reorder(o)}>{t("ord_reorder")}</button>}
           {(o.status === "pending" || o.status === "confirmed") && (confirm ? (
             <div className="card p-4 flex flex-col gap-3"><p className="text-sm font-semibold">{t("ord_cancel_q")}</p>
-              <div className="flex gap-2"><button className="btn-danger flex-1" onClick={() => { cancelOrder(o.id); setConfirm(false); toast(`#${o.id} ${t("st_cancelled")}`); }}>{t("ord_cancel")}</button><button className="btn-ghost" onClick={() => setConfirm(false)}>{t("cancel")}</button></div></div>
+              <div className="flex gap-2"><button className="btn-danger flex-1" onClick={async () => { try { await cancelOrder(o.id); toast(`#${o.id} ${t("st_cancelled")}`); } catch (x: any) { toast(x.message, { tone: "err" }); } setConfirm(false); }}>{t("ord_cancel")}</button><button className="btn-ghost" onClick={() => setConfirm(false)}>{t("cancel")}</button></div></div>
           ) : <button type="button" className="btn-danger" onClick={() => setConfirm(true)}>{t("ord_cancel")}</button>)}
         </aside>
       </div>
@@ -154,7 +154,7 @@ export function AccountPage() {
 
       <section className="card p-6 mb-6">
         <h2 className="font-display text-2xl font-bold mb-4">{t("acc_profile")}</h2>
-        <form className="grid sm:grid-cols-2 gap-4" onSubmit={(e) => { e.preventDefault(); updateProfile(p); toast(t("acc_saved")); }}>
+        <form className="grid sm:grid-cols-2 gap-4" onSubmit={async (e) => { e.preventDefault(); try { await updateProfile(p); toast(t("acc_saved")); } catch (x: any) { toast(x.message, { tone: "err" }); } }}>
           <Field label={t("auth_name")}><input className="input" value={p.name} onChange={(e) => setP({ ...p, name: e.target.value })} /></Field>
           <Field label={t("addr_phone")}><input className="input" type="tel" value={p.phone} onChange={(e) => setP({ ...p, phone: e.target.value })} /></Field>
           <Field label={t("acc_email")}><input className="input bg-field" value={me.email} readOnly /></Field>
@@ -176,8 +176,8 @@ export function AccountPage() {
                 {a.name} · {a.phone}<br />{a.line1}{a.line2 ? ", " + a.line2 : ""}<br />{a.city}, {a.state} {a.pincode}
                 <div className="flex flex-wrap gap-1 mt-3 -ml-2">
                   <button className="px-2 min-h-[36px] text-pine font-semibold" onClick={() => setEditing(a)}>{t("addr_edit")}</button>
-                  {!a.isDefault && <button className="px-2 min-h-[36px] text-pine font-semibold" onClick={() => setDefaultAddress(a.id)}>{t("addr_make_default")}</button>}
-                  <button className="px-2 min-h-[36px] text-danger font-semibold" onClick={() => { deleteAddress(a.id); toast(t("addr_delete")); }}>{t("addr_delete")}</button>
+                  {!a.isDefault && <button className="px-2 min-h-[36px] text-pine font-semibold" onClick={() => setDefaultAddress(a.id).catch((x) => toast(x.message, { tone: "err" }))}>{t("addr_make_default")}</button>}
+                  <button className="px-2 min-h-[36px] text-danger font-semibold" onClick={() => deleteAddress(a.id).then(() => toast(t("addr_delete")), (x) => toast(x.message, { tone: "err" }))}>{t("addr_delete")}</button>
                 </div>
               </div>
             ))}

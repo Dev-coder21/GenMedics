@@ -3,6 +3,7 @@
 // inventory edits, settings) lives in the browser's localStorage, so the whole platform runs on
 // GitHub Pages with no server. Shape mirrors the backend models so a real API can be swapped in.
 import { useSyncExternalStore } from "react";
+import { API, api, detectApi, getToken, setToken } from "./api.js";
 
 export type Brand = { name: string; maker?: string; mrp?: number; count?: number; unit?: number };
 export type Category = "pain" | "bp" | "diab" | "acid" | "allergy" | "abx" | "chol" | "vit" | "skin" | "other";
@@ -33,9 +34,16 @@ export type DB = {
   v: 2; seeded: boolean; users: User[]; session: string | null; cart: CartItem[]; wishlist: Record<string, number[]>;
   addresses: Address[]; orders: Order[]; prescriptions: Prescription[]; inv: Record<number, InvPatch>; custom: Med[];
   settings: Settings; lang: "en" | "hi"; nextOrder: number;
+  /** api mode: live catalogue rows from the backend (price/stock/rx/…); null until loaded */
+  srvMeds?: SrvMed[] | null;
 };
+export type SrvMed = { id: number; name: string; salt: string; price: number; stock: number; rx: boolean; pack: string; cat: Category; use: string; form: string };
 
-const KEY = "genmedics:v2";
+/** "demo" = everything in localStorage (GitHub Pages); "api" = FastAPI + PostgreSQL backend (local). */
+export let MODE: "demo" | "api" = "demo";
+export const isApi = () => MODE === "api";
+
+let KEY = "genmedics:v2";
 export const DEFAULT_SETTINGS: Settings = { freeAbove: 299, fee: 40, portalTitle: "GenMedics Admin", rxCheck: true, cod: true, upi: true };
 
 // sha256("genmedics:" + password) of the two demo accounts — see README.
@@ -66,12 +74,12 @@ function load(): DB {
   return fresh();
 }
 
-let db: DB = load();
+let db: DB = fresh();
 const subs = new Set<() => void>();
 
 function persist() {
   for (let attempt = 0; attempt < 6; attempt++) {
-    try { localStorage.setItem(KEY, JSON.stringify(db)); return; }
+    try { localStorage.setItem(KEY, JSON.stringify(MODE === "api" ? { ...db, srvMeds: undefined } : db)); return; }
     catch {
       // Storage full: drop stored prescription images, oldest first, then retry.
       const withImg = db.prescriptions.filter((p) => p.image);
@@ -92,7 +100,7 @@ function set(next: Partial<DB> | ((d: DB) => Partial<DB>)) {
 // Keep tabs in sync (e.g. admin console in one tab, store in another).
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (e) => {
-    if (e.key === KEY) { db = load(); subs.forEach((f) => f()); }
+    if (e.key === KEY && MODE === "demo") { db = load(); subs.forEach((f) => f()); }
   });
 }
 
@@ -110,7 +118,7 @@ export async function hashPass(p: string) {
 // ---------- session / users ----------
 export const currentUser = (d: DB = db) => d.users.find((u) => u.id === d.session) || null;
 
-export async function login(email: string, password: string, needAdmin = false) {
+async function localLogin(email: string, password: string, needAdmin = false) {
   const u = db.users.find((x) => x.email.toLowerCase() === email.trim().toLowerCase());
   if (!u || u.pass !== (await hashPass(password))) throw new Error("Incorrect email or password");
   if (needAdmin && !u.admin) throw new Error("This account doesn't have admin access");
@@ -118,7 +126,7 @@ export async function login(email: string, password: string, needAdmin = false) 
   return u;
 }
 
-export async function register(data: { name: string; email: string; phone?: string; password: string }) {
+async function localRegister(data: { name: string; email: string; phone?: string; password: string }) {
   const email = data.email.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error("Enter a valid email address");
   if (data.password.length < 6) throw new Error("Password must be at least 6 characters");
@@ -129,14 +137,14 @@ export async function register(data: { name: string; email: string; phone?: stri
   return u;
 }
 
-export const logout = () => set({ session: null });
+const localLogout = () => set({ session: null });
 
-export function updateProfile(p: { name: string; phone?: string }) {
+function localUpdateProfile(p: { name: string; phone?: string }) {
   const me = currentUser(); if (!me) return;
   set((d) => ({ users: d.users.map((u) => (u.id === me.id ? { ...u, name: p.name.trim() || u.name, phone: p.phone?.trim() } : u)) }));
 }
 
-export async function changePassword(oldP: string, newP: string) {
+async function localChangePassword(oldP: string, newP: string) {
   const me = currentUser(); if (!me) throw new Error("Not signed in");
   if (me.pass !== (await hashPass(oldP))) throw new Error("Current password is incorrect");
   if (newP.length < 6) throw new Error("New password must be at least 6 characters");
@@ -169,7 +177,7 @@ export function toggleWish(id: number) {
 export const wishOf = (d: DB) => d.wishlist[d.session || "guest"] || [];
 
 // ---------- addresses ----------
-export function saveAddress(a: Omit<Address, "id" | "userId"> & { id?: string }) {
+function localSaveAddress(a: Omit<Address, "id" | "userId"> & { id?: string }) {
   const me = currentUser(); if (!me) throw new Error("Sign in to save an address");
   for (const k of ["name", "phone", "line1", "city", "state", "pincode"] as const) if (!String(a[k] || "").trim()) throw new Error("Please fill in all required address fields");
   if (!/^\d{6}$/.test(a.pincode.trim())) throw new Error("PIN code must be 6 digits");
@@ -185,7 +193,7 @@ export function saveAddress(a: Omit<Address, "id" | "userId"> & { id?: string })
   });
   return rec;
 }
-export function deleteAddress(id: string) {
+function localDeleteAddress(id: string) {
   set((d) => {
     const gone = d.addresses.find((a) => a.id === id);
     let list = d.addresses.filter((a) => a.id !== id);
@@ -193,22 +201,22 @@ export function deleteAddress(id: string) {
     return { addresses: list };
   });
 }
-export const setDefaultAddress = (id: string) => set((d) => {
+const localSetDefaultAddress = (id: string) => set((d) => {
   const t = d.addresses.find((a) => a.id === id); if (!t) return {};
   return { addresses: d.addresses.map((a) => (a.userId === t.userId ? { ...a, isDefault: a.id === id } : a)) };
 });
 
 // ---------- prescriptions ----------
-export function savePrescription(p: Omit<Prescription, "id" | "userId" | "status" | "createdAt">) {
+function localSavePrescription(p: Omit<Prescription, "id" | "userId" | "status" | "createdAt">) {
   const me = currentUser(); if (!me) throw new Error("Sign in to save a prescription");
   const rec: Prescription = { ...p, id: "RX-" + Date.now().toString(36).toUpperCase(), userId: me.id, status: "pending", createdAt: new Date().toISOString() };
   set((d) => ({ prescriptions: [rec, ...d.prescriptions] }));
   return rec;
 }
-export function reviewPrescription(id: string, status: RxStatus, note?: string) {
+function localReviewPrescription(id: string, status: RxStatus, note?: string) {
   set((d) => ({ prescriptions: d.prescriptions.map((p) => (p.id === id ? { ...p, status, note: note?.trim() || p.note, reviewedAt: new Date().toISOString() } : p)) }));
 }
-export const deletePrescription = (id: string) => set((d) => ({ prescriptions: d.prescriptions.filter((p) => p.id !== id) }));
+const localDeletePrescription = (id: string) => set((d) => ({ prescriptions: d.prescriptions.filter((p) => p.id !== id) }));
 
 // ---------- orders ----------
 export const ORDER_FLOW: OrderStatus[] = ["pending", "confirmed", "processing", "shipped", "delivered"];
@@ -225,7 +233,7 @@ export function quote(lines: { med: Med; qty: number }[], s: Settings = db.setti
 }
 const round = (n: number) => Math.round(n * 100) / 100;
 
-export function placeOrder(opts: { lines: { med: Med; qty: number }[]; addressId: string; payment: "cod" | "upi"; rxId?: string }) {
+function localPlaceOrder(opts: { lines: { med: Med; qty: number }[]; addressId: string; payment: "cod" | "upi"; rxId?: string }) {
   const me = currentUser(); if (!me) throw new Error("Please sign in to place an order");
   if (!opts.lines.length) throw new Error("Your cart is empty");
   const address = db.addresses.find((a) => a.id === opts.addressId && a.userId === me.id);
@@ -252,7 +260,7 @@ export function placeOrder(opts: { lines: { med: Med; qty: number }[]; addressId
   return order;
 }
 
-export function setOrderStatus(id: number, status: OrderStatus, note?: string) {
+function localSetOrderStatus(id: number, status: OrderStatus, note?: string) {
   set((d) => ({
     orders: d.orders.map((o) => {
       if (o.id !== id || o.status === status) return o;
@@ -266,25 +274,25 @@ export function setOrderStatus(id: number, status: OrderStatus, note?: string) {
     if (o) set((d) => { const inv = { ...d.inv }; for (const it of o.items) { const cur = inv[it.id]?.stock; if (cur != null) inv[it.id] = { ...inv[it.id], stock: cur + it.qty }; } return { inv }; });
   }
 }
-export const cancelOrder = (id: number) => setOrderStatus(id, "cancelled", "Cancelled by customer");
+
 
 // ---------- inventory (admin) ----------
-export function patchMed(id: number, patch: InvPatch) {
+function localPatchMed(id: number, patch: InvPatch) {
   set((d) => (d.custom.some((m) => m.id === id)
     ? { custom: d.custom.map((m) => (m.id === id ? { ...m, ...patch } as Med : m)) }
     : { inv: { ...d.inv, [id]: { ...(d.inv[id] || {}), ...patch } } }));
 }
-export function addMed(m: Omit<Med, "id" | "custom" | "brands" | "save" | "unit" | "full" | "salt"> & { salt?: string }) {
+function localAddMed(m: Omit<Med, "id" | "custom" | "brands" | "save" | "unit" | "full" | "salt"> & { salt?: string }) {
   const id = 900000 + db.custom.length + 1 + Math.floor(Math.random() * 1000);
   const rec: Med = { ...m, id, full: m.name, salt: m.salt || m.name, brands: [], save: 0, unit: round(m.price / Math.max(1, m.count)), custom: true };
   set((d) => ({ custom: [rec, ...d.custom] }));
   return rec;
 }
-export function deleteMed(id: number) {
+function localDeleteMed(id: number) {
   set((d) => (d.custom.some((m) => m.id === id) ? { custom: d.custom.filter((m) => m.id !== id) } : { inv: { ...d.inv, [id]: { ...(d.inv[id] || {}), deleted: true } } }));
   removeFromCart(id);
 }
-export const updateSettings = (s: Partial<Settings>) => set((d) => ({ settings: { ...d.settings, ...s } }));
+const localUpdateSettings = (s: Partial<Settings>) => set((d) => ({ settings: { ...d.settings, ...s } }));
 
 export function resetDemo() {
   try { localStorage.removeItem(KEY); } catch {}
@@ -334,3 +342,174 @@ export function seedDemo(meds: Med[]) {
 }
 
 export const LOW_STOCK = 30;
+
+
+// =====================================================================================
+// Mode switch: every action below runs against the backend in "api" mode, browser storage otherwise.
+// =====================================================================================
+
+const errMsg = (e: any) => (e && e.message) || String(e);
+
+/** Called once before the app renders. */
+export async function initStore() {
+  const base = await detectApi();
+  MODE = base ? "api" : "demo";
+  KEY = MODE === "api" ? "genmedics:api:v2" : "genmedics:v2";
+  db = load();
+  if (MODE === "api") {
+    db = { ...db, srvMeds: null, seeded: true };
+    try { db = { ...db, settings: { ...DEFAULT_SETTINGS, ...(await api<Settings>("/v2/settings")) } }; } catch {}
+    if (getToken()) {
+      try { const me = await api<User>("/v2/me"); db = { ...db, session: me.id, users: [me] }; await sync(); }
+      catch { setToken(null); db = { ...db, session: null }; }
+    } else db = { ...db, session: null };
+    refreshCatalogue();
+    setInterval(() => { if (db.session) sync(); }, 20000);
+    window.addEventListener("focus", () => { if (db.session) sync(); });
+  }
+  persist();
+  subs.forEach((f) => f());
+}
+
+export async function refreshCatalogue() {
+  if (MODE !== "api") return;
+  try { set({ srvMeds: await api<SrvMed[]>("/v2/medicines") }); } catch {}
+}
+
+/** Pull everything the signed-in user (or admin) can see. */
+export async function sync() {
+  if (MODE !== "api" || !db.session) return;
+  const me = currentUser();
+  const all = me?.admin ? "?all=1" : "";
+  try {
+    const [orders, prescriptions, addresses, users] = await Promise.all([
+      api<Order[]>("/v2/orders" + all), api<Prescription[]>("/v2/prescriptions" + all), api<Address[]>("/v2/addresses"),
+      me?.admin ? api<User[]>("/v2/admin/users") : Promise.resolve(db.users.filter((u) => u.id === db.session)),
+    ]);
+    set({ orders, prescriptions, addresses, users: users.some((u) => u.id === db.session) ? users : [...users, me!] });
+  } catch (e: any) {
+    if (e?.status === 401) { setToken(null); set({ session: null }); }
+  }
+}
+
+async function afterAuth(res: { token: string; user: User }) {
+  setToken(res.token);
+  set({ session: res.user.id, users: [res.user], orders: [], prescriptions: [], addresses: [] });
+  await sync();
+  return res.user;
+}
+
+export async function login(email: string, password: string, needAdmin = false) {
+  if (MODE === "demo") return localLogin(email, password, needAdmin);
+  const res = await api<{ token: string; user: User }>("/v2/auth/login", { body: { email, password } });
+  if (needAdmin && !res.user.admin) throw new Error("This account doesn't have admin access");
+  return afterAuth(res);
+}
+export async function register(data: { name: string; email: string; phone?: string; password: string }) {
+  if (MODE === "demo") return localRegister(data);
+  return afterAuth(await api("/v2/auth/register", { body: data }));
+}
+export function logout() {
+  if (MODE === "api") { setToken(null); set({ session: null, orders: [], prescriptions: [], addresses: [], users: [] }); }
+  else localLogout();
+}
+export async function updateProfile(p: { name: string; phone?: string }) {
+  if (MODE === "demo") return localUpdateProfile(p);
+  const u = await api<User>("/v2/me", { method: "PATCH", body: p });
+  set((d) => ({ users: d.users.map((x) => (x.id === u.id ? u : x)) }));
+}
+export async function changePassword(oldP: string, newP: string) {
+  if (MODE === "demo") return localChangePassword(oldP, newP);
+  await api("/v2/me/password", { body: { old: oldP, new: newP } });
+}
+
+export async function saveAddress(a: Omit<Address, "id" | "userId"> & { id?: string }) {
+  if (MODE === "demo") return localSaveAddress(a);
+  const body = { label: a.label, name: a.name, phone: a.phone, line1: a.line1, line2: a.line2 || "", city: a.city, state: a.state, pincode: a.pincode, isDefault: !!a.isDefault };
+  const rec = await api<Address>(a.id ? `/v2/addresses/${a.id}` : "/v2/addresses", { method: a.id ? "PUT" : "POST", body });
+  set({ addresses: await api<Address[]>("/v2/addresses") });
+  return rec;
+}
+export async function deleteAddress(id: string) {
+  if (MODE === "demo") return localDeleteAddress(id);
+  await api(`/v2/addresses/${id}`, { method: "DELETE" });
+  set({ addresses: await api<Address[]>("/v2/addresses") });
+}
+export async function setDefaultAddress(id: string) {
+  if (MODE === "demo") return localSetDefaultAddress(id);
+  await api(`/v2/addresses/${id}/default`, { method: "POST" });
+  set({ addresses: await api<Address[]>("/v2/addresses") });
+}
+
+/** api mode only: send the photo to the Python scanner service through the backend. */
+export async function scanOnServer(file: Blob, filename = "prescription.png"): Promise<Prescription> {
+  const fd = new FormData();
+  fd.append("file", file, filename);
+  const p = await api<Prescription>("/v2/prescriptions/scan", { form: fd });
+  set((d) => ({ prescriptions: [p, ...d.prescriptions.filter((x) => x.id !== p.id)] }));
+  return p;
+}
+export async function setPrescriptionMatches(id: string, matches: RxMatch[]) {
+  if (MODE === "demo") { set((d) => ({ prescriptions: d.prescriptions.map((p) => (p.id === id ? { ...p, matches } : p)) })); return; }
+  const p = await api<Prescription>(`/v2/prescriptions/${id}/matches`, { method: "PUT", body: { matches } });
+  set((d) => ({ prescriptions: d.prescriptions.map((x) => (x.id === id ? p : x)) }));
+}
+export async function savePrescription(p: Omit<Prescription, "id" | "userId" | "status" | "createdAt">) {
+  if (MODE === "demo") return localSavePrescription(p);
+  const rec = await api<Prescription>("/v2/prescriptions", { body: { text: p.text, confidence: p.confidence, image: p.image, matches: p.matches } });
+  set((d) => ({ prescriptions: [rec, ...d.prescriptions] }));
+  return rec;
+}
+export async function reviewPrescription(id: string, status: RxStatus, note?: string) {
+  if (MODE === "demo") return localReviewPrescription(id, status, note);
+  const p = await api<Prescription>(`/v2/admin/prescriptions/${id}`, { method: "PATCH", body: { status, note } });
+  set((d) => ({ prescriptions: d.prescriptions.map((x) => (x.id === id ? p : x)) }));
+}
+export async function deletePrescription(id: string) {
+  if (MODE === "demo") return localDeletePrescription(id);
+  await api(`/v2/prescriptions/${id}`, { method: "DELETE" });
+  set((d) => ({ prescriptions: d.prescriptions.filter((x) => x.id !== id) }));
+}
+
+export async function placeOrder(opts: { lines: { med: Med; qty: number }[]; addressId: string; payment: "cod" | "upi"; rxId?: string }): Promise<Order> {
+  if (MODE === "demo") return localPlaceOrder(opts);
+  const o = await api<Order>("/v2/orders", { body: { items: opts.lines.map((l) => ({ id: l.med.id, qty: l.qty })), addressId: opts.addressId, payment: opts.payment, rxId: opts.rxId } });
+  set((d) => ({ orders: [o, ...d.orders.filter((x) => x.id !== o.id)], cart: [] }));
+  refreshCatalogue();
+  return o;
+}
+export async function setOrderStatus(id: number, status: OrderStatus, note?: string) {
+  if (MODE === "demo") return localSetOrderStatus(id, status, note);
+  const o = await api<Order>(`/v2/admin/orders/${id}`, { method: "PATCH", body: { status, note } });
+  set((d) => ({ orders: d.orders.map((x) => (x.id === id ? o : x)) }));
+  if (status === "cancelled") refreshCatalogue();
+}
+export async function cancelOrder(id: number) {
+  if (MODE === "demo") return localSetOrderStatus(id, "cancelled", "Cancelled by customer");
+  const o = await api<Order>(`/v2/orders/${id}/cancel`, { method: "POST" });
+  set((d) => ({ orders: d.orders.map((x) => (x.id === id ? o : x)) }));
+  refreshCatalogue();
+}
+
+export async function patchMed(id: number, patch: InvPatch) {
+  if (MODE === "demo") return localPatchMed(id, patch);
+  await api(`/v2/medicines/${id}`, { method: "PATCH", body: patch });
+  await refreshCatalogue();
+}
+export async function addMed(m: Parameters<typeof localAddMed>[0]) {
+  if (MODE === "demo") return localAddMed(m);
+  const r = await api<SrvMed>("/v2/medicines", { body: { name: m.name, price: m.price, stock: m.stock, rx: m.rx, pack: m.pack, cat: m.cat, use: m.use, form: m.form, salt: m.salt } });
+  await refreshCatalogue();
+  return r;
+}
+export async function deleteMed(id: number) {
+  if (MODE === "demo") return localDeleteMed(id);
+  await api(`/v2/medicines/${id}`, { method: "DELETE" });
+  removeFromCart(id);
+  await refreshCatalogue();
+}
+export async function updateSettings(s: Partial<Settings>) {
+  if (MODE === "demo") return localUpdateSettings(s);
+  set({ settings: { ...DEFAULT_SETTINGS, ...(await api<Settings>("/v2/settings", { method: "PUT", body: s })) } });
+}
+export { errMsg };

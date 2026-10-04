@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { useRoute, useScrollTop } from "./lib/router.js";
-import { useDB, currentUser } from "./lib/store.js";
+import { useDB, currentUser, initStore } from "./lib/store.js";
 import { Header, Footer, Toaster, AuthModal, ChatWidget } from "./components/Shell.js";
 import Home from "./pages/Home.js";
 import Medicines from "./pages/Medicines.js";
@@ -68,4 +68,4 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+initStore().finally(() => createRoot(document.getElementById("root")!).render(<App />));

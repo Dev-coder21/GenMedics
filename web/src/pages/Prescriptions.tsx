@@ -3,10 +3,11 @@ import { useCatalog, cheapestBrand } from "../lib/catalog.js";
 import { useT } from "../lib/i18n.js";
 import { Link, useRoute } from "../lib/router.js";
 import { inr, fmtDate, cx } from "../lib/format.js";
-import { addToCart, currentUser, deletePrescription, getDB, savePrescription, useDB, Prescription } from "../lib/store.js";
+import { addToCart, currentUser, deletePrescription, getDB, isApi, savePrescription, scanOnServer, setPrescriptionMatches, useDB, Prescription } from "../lib/store.js";
 import { openAuth, toast } from "../lib/ui.js";
 import { fileToImage, recognise, thumbnail } from "../lib/ocr.js";
 import { LineMatch, matchPrescription, packsFor } from "../lib/match.js";
+import { assetUrl } from "../lib/api.js";
 import { Empty, RxPill, Spinner, Stepper } from "../components/bits.js";
 import { Icon } from "../components/Icon.js";
 
@@ -32,17 +33,17 @@ export default function Prescriptions() {
   const [added, setAdded] = useState(false);
   const [err, setErr] = useState("");
   const [drag, setDrag] = useState(false);
+  const [engine, setEngine] = useState<"browser" | "server">("browser");
   const fileIn = useRef<HTMLInputElement>(null);
   const camIn = useRef<HTMLInputElement>(null);
 
-  const doSave = (text: string, conf: number, th: string, rs: Row[]) => {
-    try {
-      const p = savePrescription({ image: th, text, confidence: conf, matches: rs.map((r) => ({ medId: r.med.id, name: r.med.name, line: r.line, score: r.score, brand: r.brand })) });
-      setSaved(p);
-    } catch { /* not signed in */ }
+  const toMatches = (rs: Row[]) => rs.map((r) => ({ medId: r.med.id, name: r.med.name, line: r.line, score: r.score, brand: r.brand }));
+  const doSave = async (text: string, conf: number, th: string, rs: Row[]) => {
+    try { setSaved(await savePrescription({ image: th, text, confidence: conf, matches: toMatches(rs) })); }
+    catch (e: any) { if (currentUser(getDB())) toast(e.message, { tone: "err" }); }
   };
 
-  const run = async (file: Blob) => {
+  const run = async (file: Blob, name = "prescription.png") => {
     if (!ready) return;
     setErr(""); setStage("reading"); setStep(0); setPct(0); setAdded(false); setSaved(null);
     try {
@@ -50,25 +51,38 @@ export default function Prescriptions() {
       setPreview(URL.createObjectURL(file));
       const th = thumbnail(img);
       setThumb(th);
-      const passes = await recognise(img, (s, p) => { setStep(s); setPct(p); });
-      setStep(2);
-      // pick the OCR pass that finds the most medicines (ties: higher confidence)
-      const scored = passes.map((p) => ({ p, r: matchPrescription(p.text, meds) })).sort((a, b) => b.r.matches.length - a.r.matches.length || b.p.confidence - a.p.confidence);
-      const { p, r } = scored[0];
+      let server: Prescription | null = null;
+      let p = { text: "", confidence: 0 }, r = { matches: [] as LineMatch[], unmatched: [] as string[] };
+      if (isApi() && currentUser(getDB())) {
+        // Local full-stack mode: FastAPI backend -> Python scanner service (OpenCV + multi-pass Tesseract)
+        setEngine("server"); setStep(1);
+        try { server = await scanOnServer(file, name); } catch (e: any) { if (e.status && e.status !== 503) throw e; }
+      }
+      if (server) {
+        p = { text: server.text, confidence: server.confidence };
+        r = matchPrescription(server.text, meds);
+      } else {
+        setEngine("browser");
+        const passes = await recognise(img, (s, pc) => { setStep(s); setPct(pc); });
+        // pick the OCR pass that finds the most medicines (ties: higher confidence)
+        const best = passes.map((x) => ({ x, m: matchPrescription(x.text, meds) })).sort((a, b) => b.m.matches.length - a.m.matches.length || b.x.confidence - a.x.confidence)[0];
+        p = best.x; r = best.m;
+      }
       setStep(3);
       await new Promise((res) => setTimeout(res, 350));
       const rs = r.matches.map((m) => ({ ...m, on: m.med.stock > 0, qty: Math.min(packsFor(m), Math.max(1, m.med.stock)) }));
       setRows(rs); setUnmatched(r.unmatched); setOcr({ text: p.text.trim(), confidence: p.confidence });
       setStage("review"); setStep(4);
-      if (currentUser(getDB())) doSave(p.text.trim(), p.confidence, th, rs);
+      if (server) { await setPrescriptionMatches(server.id, toMatches(rs)); setSaved({ ...server, matches: toMatches(rs) }); }
+      else if (currentUser(getDB())) await doSave(p.text.trim(), p.confidence, th, rs);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e: any) {
       setErr(e?.message || t("rx_ocr_fail")); setStage("error");
     }
   };
 
-  const onFiles = (fl: FileList | null) => { const f = fl?.[0]; if (f) { if (!f.type.startsWith("image/")) { toast("Please choose an image (JPG or PNG)", { tone: "err" }); return; } run(f); } };
-  const sample = async () => { const r = await fetch("img/sample-prescription.png"); run(await r.blob()); };
+  const onFiles = (fl: FileList | null) => { const f = fl?.[0]; if (f) { if (!f.type.startsWith("image/")) { toast("Please choose an image (JPG or PNG)", { tone: "err" }); return; } run(f, f.name); } };
+  const sample = async () => { const r = await fetch("img/sample-prescription.png"); run(await r.blob(), "sample-prescription.png"); };
   const reset = () => { setStage("idle"); setRows([]); setUnmatched([]); setPreview(""); setSaved(null); setAdded(false); if (fileIn.current) fileIn.current.value = ""; };
 
   const sel = rows.filter((r) => r.on);
@@ -83,7 +97,7 @@ export default function Prescriptions() {
     setAdded(true);
     toast(t("added"), { action: { label: t("view_cart"), to: next === "checkout" ? "/checkout" : "/cart" } });
   };
-  const steps = [[t("rx_s1"), t("rx_s1d")], [t("rx_s2"), t("rx_s2d")], [t("rx_s3"), t("rx_s3d")], [t("rx_s4"), t("rx_s4d")]];
+  const steps = [[t("rx_s1"), engine === "server" ? "Uploaded to the GenMedics API" : t("rx_s1d")], [t("rx_s2"), engine === "server" ? "Python scanner service · OpenCV + multi-pass Tesseract" : t("rx_s2d")], [t("rx_s3"), t("rx_s3d")], [t("rx_s4"), t("rx_s4d")]];
   const crumbs = [t("rx_upload"), t("rx_reading").replace("…", ""), t("rx_review")];
   const stageIdx = stage === "review" ? 2 : stage === "reading" ? 1 : 0;
   const mine = db.prescriptions.filter((p) => p.userId === me?.id);
@@ -212,7 +226,7 @@ export default function Prescriptions() {
               </div>
             )}
             {saved ? <p className="text-sm text-pine flex items-center gap-2"><Icon name="check" size={16} />{t("rx_save_note")} <span className="font-mono">{saved.id}</span></p>
-              : !me ? <p className="text-sm text-body flex flex-wrap items-center gap-2">{t("rx_signin_save")}<button className="text-pine font-semibold underline min-h-[32px]" onClick={() => openAuth("signin", () => doSave(ocr.text, ocr.confidence, thumb, rows))}>{t("auth_signin")}</button></p> : null}
+              : !me ? <p className="text-sm text-body flex flex-wrap items-center gap-2">{t("rx_signin_save")}<button className="text-pine font-semibold underline min-h-[32px]" onClick={() => openAuth("signin", () => { doSave(ocr.text, ocr.confidence, thumb, rows); })}>{t("auth_signin")}</button></p> : null}
             {next === "checkout" && saved && <Link to="/checkout" className="btn-primary self-start no-underline">← {t("co_title")}</Link>}
           </div>
         </div>
@@ -226,14 +240,14 @@ export default function Prescriptions() {
               {mine.map((p) => (
                 <article key={p.id} className="card p-4 flex gap-4">
                   <div className="w-20 h-24 rounded-lg bg-paper border border-line overflow-hidden shrink-0 grid place-items-center">
-                    {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : <Icon name="doc" size={26} className="text-muted" stroke={1.5} />}
+                    {p.image ? <img src={assetUrl(p.image)} alt="" className="w-full h-full object-cover" /> : <Icon name="doc" size={26} className="text-muted" stroke={1.5} />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2"><span className="font-mono font-semibold">{p.id}</span><RxPill status={p.status} /></div>
                     <div className="text-xs text-muted mt-1">{fmtDate(p.createdAt, true)}</div>
                     <div className="text-sm text-body mt-1.5 line-clamp-2">{p.matches.map((m) => m.name).join(", ") || "—"}</div>
                     {p.note && <div className="text-xs mt-1.5 text-warn-ink">“{p.note}”</div>}
-                    <button type="button" className="text-xs text-danger font-semibold mt-1.5 min-h-[32px]" onClick={() => { deletePrescription(p.id); toast("Deleted " + p.id); }}>{t("addr_delete")}</button>
+                    <button type="button" className="text-xs text-danger font-semibold mt-1.5 min-h-[32px]" onClick={() => deletePrescription(p.id).then(() => toast("Deleted " + p.id), (x) => toast(x.message, { tone: "err" }))}>{t("addr_delete")}</button>
                   </div>
                 </article>
               ))}

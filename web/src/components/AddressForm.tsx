@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Address, saveAddress } from "../lib/store.js";
+import { Spinner } from "./bits.js";
 import { useT } from "../lib/i18n.js";
 import { Field } from "./bits.js";
 
@@ -9,10 +10,11 @@ export function AddressForm({ initial, onSaved, onCancel, defaultName = "", defa
   const t = useT();
   const [f, setF] = useState({ label: initial?.label || "Home", name: initial?.name || defaultName, phone: initial?.phone || defaultPhone, line1: initial?.line1 || "", line2: initial?.line2 || "", city: initial?.city || "", state: initial?.state || "", pincode: initial?.pincode || "", isDefault: initial?.isDefault || false });
   const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
   const u = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault(); setErr("");
-    try { onSaved(saveAddress({ ...f, id: initial?.id })); } catch (x: any) { setErr(x.message); }
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setErr(""); setBusy(true);
+    try { onSaved(await saveAddress({ ...f, id: initial?.id })); } catch (x: any) { setErr(x.message); } finally { setBusy(false); }
   };
   return (
     <form onSubmit={submit} className="grid sm:grid-cols-2 gap-4" noValidate>
@@ -32,7 +34,7 @@ export function AddressForm({ initial, onSaved, onCancel, defaultName = "", defa
       </Field>
       {err && <p role="alert" className="sm:col-span-2 text-sm text-danger bg-danger-bg rounded-lg px-3 py-2">{err}</p>}
       <div className="sm:col-span-2 flex flex-wrap gap-3">
-        <button className="btn-primary h-12 px-6">{t("addr_save")}</button>
+        <button className="btn-primary h-12 px-6" disabled={busy}>{busy && <Spinner />}{t("addr_save")}</button>
         {onCancel && <button type="button" className="btn-ghost h-12" onClick={onCancel}>{t("cancel")}</button>}
       </div>
     </form>

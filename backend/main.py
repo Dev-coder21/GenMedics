@@ -16,14 +16,18 @@ import schemas
 import crud_user  # We'll create this
 import auth  # We'll create this
 
-# Create tables
-models.Base.metadata.create_all(bind=engine)
+import bootstrap
+from v2 import router as v2_router
+
+# Create tables, add new columns, seed catalogue + demo accounts
+bootstrap.run()
 
 app = FastAPI(title="GenMedics User API", version="1.0.0")
 
 # Mount uploads directory for prescription previews
 os.makedirs("uploads/prescriptions", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.include_router(v2_router)
 
 # CORS configuration
 app.add_middleware(
@@ -36,6 +40,8 @@ app.add_middleware(
         "http://localhost:3002",
         "http://127.0.0.1:3002"
     ],
+    # the GenMedics web app (npm run serve) and any other local port
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
