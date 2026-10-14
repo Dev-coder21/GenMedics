@@ -13,6 +13,7 @@ import Info, { NotFound } from "./pages/Info.js";
 import Admin from "./admin/Admin.js";
 
 const TITLES: Record<string, string> = { medicines: "Medicines", product: "Medicine", cart: "Cart", checkout: "Checkout", orders: "Orders", prescriptions: "Scan prescription", account: "Account", wishlist: "Wishlist", admin: "Admin console" };
+const INFO_TITLES: Record<string, string> = { about: "About", help: "Help", shipping: "Shipping", returns: "Returns & refunds", privacy: "Privacy", terms: "Terms of use", careers: "Careers" };
 
 class Boundary extends React.Component<{ children: React.ReactNode }, { err: Error | null }> {
   state = { err: null as Error | null };
@@ -35,7 +36,7 @@ function App() {
   useScrollTop(path);
   useEffect(() => { document.documentElement.lang = db.lang; }, [db.lang]);
   useEffect(() => {
-    const t = parts[0] === "admin" ? db.settings.portalTitle : TITLES[parts[0]];
+    const t = parts[0] === "admin" ? db.settings.portalTitle : parts[0] === "page" ? INFO_TITLES[parts[1]] : TITLES[parts[0]];
     document.title = t ? `${t} · GenMedics` : "GenMedics — the medicine you take, for a fraction of the price";
   }, [path, db.settings.portalTitle]);
 
