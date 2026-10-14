@@ -38,7 +38,7 @@ export function Header() {
           </span>
         </div>
       </div>
-      <header className="bg-white border-b border-line sticky top-0 z-30">
+      <header className="bg-white border-b border-line sticky top-0 z-30 [@media(max-height:500px)]:static">
         <div className="wrap py-2 md:py-3 flex flex-wrap items-center gap-x-6 gap-y-2 md:gap-y-3">
           <Link to="/" className="flex items-center gap-2.5 no-underline text-ink">
             <Logo />
