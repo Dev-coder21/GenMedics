@@ -195,7 +195,21 @@ function OrdersTable({ orders }: { orders: Order[] }) {
   const users = useUsersById();
   if (!orders.length) return <p className="text-muted text-sm py-6 text-center">No orders here.</p>;
   return (
-    <div className="overflow-x-auto">
+    <>
+    {/* phones: one card per order, so amount, status and Open are visible without sideways scrolling */}
+    <ul className="md:hidden flex flex-col">
+      {orders.map((o) => (
+        <li key={o.id} className="border-t border-[#EEF0EC] first:border-t-0 py-3 flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap"><span className="font-mono font-semibold">#{o.id}</span><OrderPill status={o.status} /></div>
+            <div className="text-sm mt-1 truncate">{users.get(o.userId)?.name || o.address.name}</div>
+            <div className="text-xs text-muted mt-0.5 font-mono">{o.items.reduce((n, i) => n + i.qty, 0)} items{o.rxId ? " · Rx" : ""} · {inr(o.total)} · {timeAgo(o.createdAt)}</div>
+          </div>
+          <Link to={`/admin/orders?id=${o.id}`} className="font-semibold min-h-[44px] flex items-center px-2">Open</Link>
+        </li>
+      ))}
+    </ul>
+    <div className="hidden md:block overflow-x-auto">
       <table className="w-full min-w-[680px] text-sm border-collapse">
         <thead><tr className="text-left font-mono text-[11px] tracking-[.08em] text-muted"><th className="px-3 py-2.5 font-medium">ORDER</th><th className="px-3 py-2.5 font-medium">CUSTOMER</th><th className="px-3 py-2.5 font-medium">ITEMS</th><th className="px-3 py-2.5 font-medium">AMOUNT</th><th className="px-3 py-2.5 font-medium">STATUS</th><th className="px-3 py-2.5 font-medium">PLACED</th><th className="px-3 py-2.5" /></tr></thead>
         <tbody>
@@ -213,6 +227,7 @@ function OrdersTable({ orders }: { orders: Order[] }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
@@ -357,7 +372,29 @@ function Inventory() {
         <label><span className="sr-only-x">Category</span><select className="input w-auto" value={cat} onChange={(e) => { setCat(e.target.value as any); setPage(0); }}><option value="all">All categories</option>{CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.en}</option>)}</select></label>
         <label className="flex items-center gap-2 min-h-[44px] cursor-pointer"><input type="checkbox" className="w-5 h-5 accent-pine" checked={lowOnly} onChange={(e) => { setLowOnly(e.target.checked); setPage(0); }} />Low stock only</label>
       </div>
-      <section className="card overflow-x-auto">
+      {/* phones: card per medicine with price, stock and actions in view */}
+      <ul className="md:hidden card divide-y divide-[#EEF0EC]">
+        {view.map((m) => (
+          <li key={m.id} className="px-4 py-3">
+            <div className="font-semibold leading-snug">{m.name}</div>
+            <div className="flex items-center gap-x-3 gap-y-1 flex-wrap mt-1 text-sm">
+              <span className="inline-flex items-center gap-1.5 text-body"><span className="w-2.5 h-2.5 rounded-full" style={{ background: catInfo(m.cat).color }} />{catInfo(m.cat).en}</span>
+              <span className="font-mono">{inr(m.price)}</span>
+              <span className="text-muted">{m.pack}</span>
+              {m.rx ? <span className="pill bg-white text-warn border border-warn-line">Rx</span> : <span className="text-muted">OTC</span>}
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-sm">Stock <span className={cx("font-mono font-semibold", m.stock <= 0 ? "text-danger" : m.stock < LOW_STOCK ? "text-warn" : "")}>{m.stock}</span> <span className="font-mono text-[11px] text-muted">· #{m.id}{m.custom ? " · added" : ""}</span></span>
+              <span className="whitespace-nowrap">
+                <button type="button" className="px-2 min-h-[44px] font-semibold text-pine" onClick={() => setEdit(m)}>Edit</button>
+                <button type="button" className="px-2 min-h-[44px] font-semibold text-danger" onClick={() => setDel(m)}>Delete</button>
+              </span>
+            </div>
+          </li>
+        ))}
+        {!view.length && <li className="px-4 py-10 text-center text-muted">{ready ? "No medicines match." : "Loading…"}</li>}
+      </ul>
+      <section className="hidden md:block card overflow-x-auto">
         <table className="w-full min-w-[820px] text-sm border-collapse">
           <thead><tr className="text-left font-mono text-[11px] tracking-[.08em] text-muted"><th className="px-4 py-3 font-medium">MEDICINE</th><th className="px-4 py-3 font-medium">CATEGORY</th><th className="px-4 py-3 font-medium">PACK</th><th className="px-4 py-3 font-medium">MRP</th><th className="px-4 py-3 font-medium">STOCK</th><th className="px-4 py-3 font-medium">RX</th><th className="px-4 py-3" /></tr></thead>
           <tbody>
@@ -450,7 +487,16 @@ function Customers() {
   return (
     <>
       <Head title="Customers" sub={`${db.users.filter((u) => !u.admin).length} customers · ${db.users.filter((u) => u.admin).length} staff`} />
-      <section className="card overflow-x-auto">
+      <ul className="md:hidden card divide-y divide-[#EEF0EC]">
+        {rows.map(({ u, n, spend, rx }) => (
+          <li key={u.id} className="px-4 py-3">
+            <div className="flex items-center gap-2"><span className="font-semibold truncate">{u.name}</span>{u.admin && <span className="pill bg-ink text-lime">ADMIN</span>}</div>
+            <div className="text-sm text-body truncate">{u.email}</div>
+            <div className="text-xs text-muted font-mono mt-0.5">{n} orders · {inr(spend)} · {rx} Rx · joined {fmtDate(u.createdAt)}</div>
+          </li>
+        ))}
+      </ul>
+      <section className="hidden md:block card overflow-x-auto">
         <table className="w-full min-w-[720px] text-sm border-collapse">
           <thead><tr className="text-left font-mono text-[11px] tracking-[.08em] text-muted"><th className="px-4 py-3 font-medium">NAME</th><th className="px-4 py-3 font-medium">EMAIL</th><th className="px-4 py-3 font-medium">ROLE</th><th className="px-4 py-3 font-medium">ORDERS</th><th className="px-4 py-3 font-medium">SPEND</th><th className="px-4 py-3 font-medium">RX</th><th className="px-4 py-3 font-medium">JOINED</th></tr></thead>
           <tbody>{rows.map(({ u, n, spend, rx }) => (
