@@ -39,12 +39,12 @@ export function Header() {
         </div>
       </div>
       <header className="bg-white border-b border-line sticky top-0 z-30">
-        <div className="wrap py-3 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="wrap py-2 md:py-3 flex flex-wrap items-center gap-x-6 gap-y-2 md:gap-y-3">
           <Link to="/" className="flex items-center gap-2.5 no-underline text-ink">
             <Logo />
             <span className="font-display font-extrabold text-[22px] tracking-tight">GenMedics</span>
           </Link>
-          <form onSubmit={submit} role="search" className="order-3 lg:order-none basis-full lg:basis-auto flex-1 flex items-center gap-2.5 bg-field border border-line rounded-full pl-4 pr-1.5 h-12 focus-within:border-pine">
+          <form onSubmit={submit} role="search" className="order-3 lg:order-none basis-full lg:basis-auto flex-1 flex items-center gap-2.5 bg-field border border-line rounded-full pl-4 pr-1.5 h-11 md:h-12 focus-within:border-pine">
             <Icon name="search" size={18} className="text-muted shrink-0" />
             <label className="sr-only-x" htmlFor="site-search">{t("search_label")}</label>
             <input id="site-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("search_ph")}
@@ -80,7 +80,7 @@ export function Header() {
           </nav>
         </div>
         <div className="md:hidden border-t border-line">
-          <div className="wrap flex gap-1 overflow-x-auto py-1.5 no-scrollbar [&>*]:shrink-0 [&>*]:whitespace-nowrap">
+          <div className="wrap flex gap-1 overflow-x-auto py-0.5 no-scrollbar [&>*]:!py-2 [&>*]:shrink-0 [&>*]:whitespace-nowrap">
             {navLink("/medicines", t("nav_medicines"))}
             {navLink("/prescriptions", t("nav_scan"))}
             {navLink("/orders", t("nav_orders"))}
