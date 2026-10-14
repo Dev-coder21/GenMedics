@@ -80,7 +80,7 @@ export function Header() {
           </nav>
         </div>
         <div className="md:hidden border-t border-line">
-          <div className="wrap flex gap-1 overflow-x-auto py-1.5">
+          <div className="wrap flex gap-1 overflow-x-auto py-1.5 no-scrollbar [&>*]:shrink-0 [&>*]:whitespace-nowrap">
             {navLink("/medicines", t("nav_medicines"))}
             {navLink("/prescriptions", t("nav_scan"))}
             {navLink("/orders", t("nav_orders"))}

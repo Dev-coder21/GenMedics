@@ -36,3 +36,8 @@
 @keyframes fadeUp { from { opacity:0; transform: translateY(8px) } to { opacity:1; transform:none } }
 .fade-up { animation: fadeUp .25s ease both; }
 @media (prefers-reduced-motion: reduce) { .sweep, .fade-up { animation: none; } .lift:hover { transform:none; } }
+
+@layer utilities {
+  .no-scrollbar { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+}
